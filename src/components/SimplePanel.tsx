@@ -4,26 +4,21 @@ import { SimpleOptions } from 'types';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { SoundManager } from './SoundManager';
 import { Switch } from '@grafana/ui';
-
-// ==================== TEMP =======================
 import pluginJson from '../plugin.json';
 import { config } from '@grafana/runtime';
 
 export const pluginAssetUrl = (relPath: string) =>
   `${config.appSubUrl}/public/plugins/${pluginJson.id}/${relPath.replace(/^\/+/, '')}`;
 
-const alertUrl = new URL('../test_sound/can_i.mp3', import.meta.url).href;
-// ================================================
+const defaultAlertURL = new URL('../test_sound/flip_flap.mp3', import.meta.url).href;
 
-
-interface Props extends PanelProps<SimpleOptions> {}
-
-// Sound Manager
-const soundManager = new SoundManager(alertUrl, {
+let soundManager = new SoundManager(defaultAlertURL, {
   volume: 1.0,
   loop: true,
   startAt: 0,
 });
+
+interface Props extends PanelProps<SimpleOptions> {}
 
 export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fieldConfig, id }: Props) => {
   let [ muted, setMuted ] = React.useState(false);
@@ -31,10 +26,12 @@ export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fie
   const { enabled, soundURL, volume, loop } = options;
 
   const clampedVolume = volume / 100;
-
-  // Update sound manager settings if options change
+  if (soundURL !== '') {
+    soundManager.setSound(soundURL);
+  }
   soundManager.setVolume(clampedVolume);
   soundManager.setLoop(loop);
+
 
   if (data.series.length === 0) {
     return <PanelDataErrorView fieldConfig={fieldConfig} panelId={id} data={data} needsStringField />;
@@ -54,7 +51,7 @@ export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fie
   }
   
   return (
-    <div style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+    <div style ={{display: 'flex', alignItems: 'center', gap: '1em', justifyContent: 'center', height: '100%'}}>
       <div style={{fontSize: '2em'}}>Mute</div>
       <Switch
         label="Muted"
