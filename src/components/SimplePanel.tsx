@@ -9,12 +9,6 @@ import MUTE_ENABLED from 'feature_flags';
 
 const defaultAlertURL = new URL('../sounds/flip_flap.mp3', import.meta.url).href;
 
-let soundManager = new SoundManager(defaultAlertURL, {
-  volume: 1.0,
-  loop: true,
-  startAt: 0,
-});
-
 interface Props extends PanelProps<SimpleOptions> {}
 
 export const SimplePanel: React.FC<Props> = ({ options, data, fieldConfig, id }: Props) => {
@@ -23,6 +17,7 @@ export const SimplePanel: React.FC<Props> = ({ options, data, fieldConfig, id }:
   const [ showTestWarning, setShowTestWarning ] = React.useState(false);
   
   const { enabled, soundURL, volume, loop, muteVariableSelect } = options;
+  const soundManager = SoundManager.instance;
   
   // Mute if title contains the selected variable value
   let muteFromDashVariable = false;

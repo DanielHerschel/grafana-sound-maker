@@ -7,27 +7,20 @@ export interface SoundManagerOptions {
 export class SoundManager {
   private audio: HTMLAudioElement | null = null;
   public isPlaying = false;
-  private objectUrl: string | null = null;
-  private options: SoundManagerOptions;
+  private options: SoundManagerOptions = {};
 
-  constructor(src: string, options: SoundManagerOptions = {}) {
-    this.options = options;
-    this.init(src)
+  static #instance: SoundManager;
+
+  static get instance(): SoundManager {
+    if (!SoundManager.#instance) {
+      SoundManager.#instance = new SoundManager();
+    }
+    return SoundManager.#instance
   }
 
-  /** Initialize the SoundManager with a sound source */
-  private async init(src: string): Promise<void> {
-    this.dispose();
-
+  private constructor() {
     this.audio = new Audio();
     this.audio.preload = "auto";
-    await this.setSound(src);
-    
-
-    // apply options
-    this.audio.loop = this.options.loop ?? false;
-    this.audio.volume = this.clampVolume(this.options.volume ?? 1);
-    this.audio.currentTime = Math.max(0, this.options.startAt ?? 0);
 
     this.audio.addEventListener("play", () => (this.isPlaying = true));
     this.audio.addEventListener("ended", () => (this.isPlaying = false));
@@ -74,21 +67,6 @@ export class SoundManager {
       this.audio.currentTime = Math.max(0, seconds);
     }
     this.options.startAt = seconds;
-  }
-
-  /** Dispose and free resources */
-  public dispose(): void {
-    if (this.audio) {
-      this.audio.pause();
-      this.audio.src = "";
-      this.audio.load();
-      this.audio = null;
-    }
-    if (this.objectUrl) {
-      URL.revokeObjectURL(this.objectUrl);
-      this.objectUrl = null;
-    }
-    this.isPlaying = false;
   }
 
   public async setSound(src: string): Promise<void> {
