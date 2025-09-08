@@ -3,7 +3,7 @@ import { DataFrameView, PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { SoundManager } from './SoundManager';
-import { Switch } from '@grafana/ui';
+import { Button, Modal, Switch } from '@grafana/ui';
 import pluginJson from '../plugin.json';
 import { config } from '@grafana/runtime';
 
@@ -21,13 +21,16 @@ let soundManager = new SoundManager(defaultAlertURL, {
 interface Props extends PanelProps<SimpleOptions> {}
 
 export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fieldConfig, id }: Props) => {
-  let [ muted, setMuted ] = React.useState(false);
+  const [ muted, setMuted ] = React.useState(false);
+  const [ showTestWarning, setShowTestWarning ] = React.useState(false);
   
   const { enabled, soundURL, volume, loop } = options;
 
   const clampedVolume = volume / 100;
   if (soundURL !== '') {
     soundManager.setSound(soundURL);
+  } else {
+    soundManager.setSound(defaultAlertURL);
   }
   soundManager.setVolume(clampedVolume);
   soundManager.setLoop(loop);
@@ -42,8 +45,9 @@ export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fie
     data.series.forEach((series) => {
       const view = new DataFrameView(series);
       if (view.length > 0) {
-        console.log('Triggering sound...');
         soundManager.play();
+      } else {
+        soundManager.stop();
       }
     });
   } else {
@@ -51,18 +55,39 @@ export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fie
   }
   
   return (
-    <div style ={{display: 'flex', alignItems: 'center', gap: '1em', justifyContent: 'center', height: '100%'}}>
-      <div style={{fontSize: '2em'}}>Mute</div>
-      <Switch
-        label="Muted"
-        checked={muted}
-        onChange={() => {
-          // This is a read-only panel, so we can't change options directly.
-          // In a real implementation, you would use a callback to update the panel options.
-          console.warn('Toggle switch clicked, but panel options are read-only.');
-          setMuted(!muted);
-        }}
-      />
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '5em' }}>
+      <div style ={{display: 'flex', alignItems: 'center', gap: '1em', justifyContent: 'center'}}>
+        <div style={{fontSize: '1em'}}>Mute this Tenant</div>
+        <Switch
+          label="Muted"
+          value={muted}
+          onChange={() => {
+            // This is a read-only panel, so we can't change options directly.
+            // In a real implementation, you would use a callback to update the panel options.
+            console.warn('Toggle switch clicked, but panel options are read-only.');
+            setMuted(!muted);
+          }}
+        />
+      </div>
+      <Button 
+        onClick={
+          async () => {
+            if (!enabled) {
+              setShowTestWarning(true);
+            }
+
+            if (!soundManager.isPlaying) {
+              soundManager.play();
+              setTimeout(() => {soundManager.stop();}, 5000); 
+            }
+          }
+        }
+      >
+        Test Sound
+      </Button>
+      <Modal title="Warning" isOpen={showTestWarning} onDismiss={() => setShowTestWarning(false)} >
+        Playing sound although the sound is disabled in panel options.
+      </Modal>
     </div>
   );
 };
