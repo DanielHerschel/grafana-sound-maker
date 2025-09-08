@@ -1,10 +1,9 @@
 import React from 'react';
 import { DataFrameView, PanelProps } from '@grafana/data';
 import { SimpleOptions } from 'types';
-import { PanelDataErrorView } from '@grafana/runtime';
+import { PanelDataErrorView , getTemplateSrv} from '@grafana/runtime';
 import { SoundManager } from './SoundManager';
 import { Button, Modal, Switch } from '@grafana/ui';
-import { getTemplateSrv } from '@grafana/runtime';
 import MUTE_ENABLED from 'feature_flags';
 
 const defaultAlertURL = new URL('../sounds/flip_flap.mp3', import.meta.url).href;

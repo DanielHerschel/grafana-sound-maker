@@ -29,7 +29,7 @@ export class SoundManager {
 
   /** Play sound, won’t restart if already playing */
   public play(): void {
-    if (!this.audio) return;
+    if (!this.audio) { return };
     if (!this.isPlaying) {
       this.audio.play().catch((err: unknown) => {
         console.error("Error playing sound:", err);
