@@ -1,9 +1,11 @@
 import { PanelPlugin } from '@grafana/data';
 import { SimpleOptions } from './types';
 import { SimplePanel } from './components/SimplePanel';
+import { VariableSelectEditor } from './components/editors/VariableSelectEditor';
+import MUTE_ENABLED from 'feature_flags';
 
 export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOptions((builder) => {
-  return builder
+  builder
   .addBooleanSwitch({
     path: 'enabled',
     name: 'Enabled',
@@ -33,4 +35,17 @@ export const plugin = new PanelPlugin<SimpleOptions>(SimplePanel).setPanelOption
     description: 'Whether the sound should loop.',
     defaultValue: false,
   });
+
+  // Add mute variable select option.
+  if (MUTE_ENABLED){
+    builder.addCustomEditor({
+      id: 'muteVariableSelect',
+      path: 'muteVariableSelect',
+      name: 'Mute Variable Select',
+      description: 'Select a dashboard variable to mute the sound for this tenant. Should be a Boolean.',
+      editor: VariableSelectEditor,
+    });
+  }
+
+  return builder;
 });

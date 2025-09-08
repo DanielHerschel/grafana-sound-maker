@@ -4,13 +4,10 @@ import { SimpleOptions } from 'types';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { SoundManager } from './SoundManager';
 import { Button, Modal, Switch } from '@grafana/ui';
-import pluginJson from '../plugin.json';
-import { config } from '@grafana/runtime';
+import { getTemplateSrv } from '@grafana/runtime';
+import MUTE_ENABLED from 'feature_flags';
 
-export const pluginAssetUrl = (relPath: string) =>
-  `${config.appSubUrl}/public/plugins/${pluginJson.id}/${relPath.replace(/^\/+/, '')}`;
-
-const defaultAlertURL = new URL('../test_sound/flip_flap.mp3', import.meta.url).href;
+const defaultAlertURL = new URL('../sounds/flip_flap.mp3', import.meta.url).href;
 
 let soundManager = new SoundManager(defaultAlertURL, {
   volume: 1.0,
@@ -20,12 +17,25 @@ let soundManager = new SoundManager(defaultAlertURL, {
 
 interface Props extends PanelProps<SimpleOptions> {}
 
-export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fieldConfig, id }: Props) => {
-  const [ muted, setMuted ] = React.useState(false);
+export const SimplePanel: React.FC<Props> = ({ options, data, fieldConfig, id }: Props) => {
+  // State and variable declarations
+  const [ mutedFromSwitch, setMutedFromSwitch ] = React.useState(false);
   const [ showTestWarning, setShowTestWarning ] = React.useState(false);
   
-  const { enabled, soundURL, volume, loop } = options;
+  const { enabled, soundURL, volume, loop, muteVariableSelect } = options;
+  
+  // Mute if title contains the selected variable value
+  let muteFromDashVariable = false;
+  if (MUTE_ENABLED) {
+    if (muteVariableSelect && muteVariableSelect !== '') {
+      const templateSrv = getTemplateSrv(); // Get the template service
+      const variableValue = templateSrv.replace(`$${muteVariableSelect}`) // Extract variable value
+      
+      muteFromDashVariable = !!variableValue // Cast value to boolean
+    }
+  }
 
+  // Setup SoundManager
   const clampedVolume = volume / 100;
   if (soundURL !== '') {
     soundManager.setSound(soundURL);
@@ -40,7 +50,8 @@ export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fie
     return <PanelDataErrorView fieldConfig={fieldConfig} panelId={id} data={data} needsStringField />;
   }
 
-  // Main Logic
+  // Play Sound Logic
+  const muted = muteFromDashVariable || mutedFromSwitch;
   if (enabled && !muted) {
     data.series.forEach((series) => {
       const view = new DataFrameView(series);
@@ -56,19 +67,16 @@ export const SimplePanel: React.FC<Props> = ({ options, data, width, height, fie
   
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '5em' }}>
-      <div style ={{display: 'flex', alignItems: 'center', gap: '1em', justifyContent: 'center'}}>
+      { !muteVariableSelect && MUTE_ENABLED && <div style ={{display: 'flex', alignItems: 'center', gap: '1em', justifyContent: 'center'}}>
         <div style={{fontSize: '1em'}}>Mute this Tenant</div>
         <Switch
           label="Muted"
-          value={muted}
+          value={mutedFromSwitch}
           onChange={() => {
-            // This is a read-only panel, so we can't change options directly.
-            // In a real implementation, you would use a callback to update the panel options.
-            console.warn('Toggle switch clicked, but panel options are read-only.');
-            setMuted(!muted);
+            setMutedFromSwitch(!mutedFromSwitch);
           }}
         />
-      </div>
+      </div> }
       <Button 
         onClick={
           async () => {
